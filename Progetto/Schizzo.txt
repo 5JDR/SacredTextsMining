@@ -1,0 +1,80 @@
+Koran.txt : https://www.gutenberg.org/cache/epub/3434/pg3434.txt
+Bible.txt and Gospel.txt : https://www.gutenberg.org/files/10/10-0.txt
+
+Rig Veda(Hinduism): https://www.gutenberg.org/cache/epub/14993/pg14993.txt
+Dhammapada(Buddhism): https://www.gutenberg.org/files/35185/35185-0.txt
+Adi granth(Sikhism): https://www.yumpu.com/en/document/view/11472412/english-translation-of-siri-guru-granth-sahibpdf-gurbanifilesorg
+
+Sono riuscito a trovarli tutti su gutenberg, tranne l'ultimo
+
+Idea progetto: https://medium.com/analytics-vidhya/whats-the-most-positive-or-negative-religion-sentiment-and-data-analysis-of-holy-books-with-r-3fb881289f51
+
+Provare ad usare gutenbergr
+
+Considerare dei raggruppamenti di religioni (Tutti insieme e uno alla volta, religioni monoteiste e politeiste, religioni dell'asia sud-orientale e altre religioni)
+
+Per verificare ciò analizzerò i testi sacri delle religioni più praticate:
+- Cristianesimo
+- Islam
+- Ebraismo
+Queste 3 rappresentano le principali religioni monoteiste, che hanno anche delle radici comuni, per cui mi aspetto alcune similarità e congruenze, molto interessante sarà analizzare le differenze
+tra Cristianesimo ed Islam che hanno portato negli anni alle repressioni dell'una da parte dell'altra.
+- Buddhismo
+- Induismo
+- Sikhismo(?)
+
+Introduzione 2 slide
+
+1) Sentiment Analysis
+	------------
+1 slide	1.1) Quali testi sacri hanno un sentiment positivo e quali hanno un sentiment negativo?
+	1.2) Quali testi sacri sono i più positivi?
+	------------
+	1.3) C'è correlazione tra il sentiment di un testo sacro e la quantità di fedeli?
+1 slide	1.4) In caso non ci sia, può essere ciò dovuto al fatto che molti "fedeli" non conoscono i testi, ma credono in una religione soltanto per tradizione?
+		Sentiment negativo <-> Molti fedeli => Ipotizzo che non conoscano i testi (Sentiment positivo <-> Pochi fedeli)
+		Sentiment positivo <-> Molti fedeli => Ipotizzo che conoscono i testi (Sentiment negativo <-> Molti fedeli ... perchè)
+	------------
+1 slide	1.5) Il sentiment della religione rispecchia le caratteristiche degli stati in cui va per la maggiore? (Es benessere stato <-> religione predominante)
+
+2) Document term frequency
+	------------
+1 slide	2.1) Quali sono le parole più ricorrenti all'interno dei testi sacri?
+	------------
+	2.2) C'è correlazione lineare nella frequenza di parole tra 2 o più testi sacri?
+2 slide	2.3) Testi sacri di religioni molto differenti, hanno una correlazione?
+	2.4) In caso ci sia correlazione, può essere ciò dovuto ad una qualche origine in comune tra le religioni? Per esempio la posizione geografica?
+
+3) Topic modeling
+	------------
+2 slide	3.1) Quali sono gli argomenti più presenti? (Libri singoli, capitoli singoli(?), gruppi, tutto)
+	------------
+1 slide	3.2) Ci sono argomenti in comune(ricorrenti) tra i testi sacri?
+	3.3) Ci sono argomenti in comune tra i testi sacri di religioni molto differenti?
+	------------
+1 slide	3.4) In caso positivo, e nel caso in cui la risposta alle domande 2.3 e 2.4 sia positiva, si può dire che ciò rinforzerebbe le ipotesi? Stessa cosa nel caso contrario.
+
+4) Conclusioni
+	------------
+1 slide	4.1) Le mie 2 ipotesi si sono verificate? 
+	4.2) Se no, sono emersi nuovi elementi, dettagli, curiosità?
+	------------
+1 slide	4.3) Citazione (da trovare)
+
+14 slide totali
+16 con titolo e fine
+
+-Se ho un ipotesi, fare una ricerca sul web per avvalorarla, se i siti non sono affidabili anche no (Non ho trovato un articolo affidabile che avvalori questa ipotesi, ma i dati parlano chiaro)
+-Fare relazione mano a mano che faccio il progetto
+-Fare github
+-Ottimizzare i tempi, se una cosa mi richiede troppo tempo e non è poi così interessante, rimuoverla
+-Ridurre all'osso la presentazione, esporre solo i risultati (NON COME LI HO RAGGIUNTI, QUESTO LO METTERò NELLA RELAZIONE)
+-Scegliere font (sans-serif)
+-Usare Hierarchy, usare dimensioni diverse per: titolo, grande, in alto, informazione principale, dimensione media, posizionata in mezzo, eventuali informazioni secondarie, piu piccole, in basso
+-Argomenti extra per chiacchierare
+-Colori complementari per i grafici
+- Citazioni(?) in grigetto(?)
+
+
+--------------------
+- Nel grafico del sentiment afinn del nuovo Testamento, la parola morte x es potrebbe avere un significato positivo dato che si parla anche di risurrezione dell'anima (grafici non contestualizzati, solamente indicativi)

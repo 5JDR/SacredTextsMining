@@ -1,0 +1,987 @@
+---
+title: "Document_term_frequency_RAW"
+author: "Sandro Junior Della Rovere"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(tidytext)
+library(dplyr)
+library(tm)
+library(janitor)
+library(extrafont)
+library(SnowballC)
+library(stringr)
+loadfonts(device="win")
+```
+
+```{r}
+#------------------------------------------------------------------
+#OLD AND NEW TESTAMENT
+bible_csv<-read.csv("../bible_csv.csv",
+         skip = 82,
+         col.names = c("line", "text"),
+         )
+
+tidy_bible<-bible_csv %>% 
+  filter(line<74727) %>% 
+  mutate(line = row_number())
+#-----------------------------------------------------------------
+tidy_gospel<- tidy_bible %>% 
+  filter(line>57430)
+#-----------------------------------------------------------------
+tidy_bible<-tidy_bible %>% 
+  filter(line<57429)
+
+bible_words<-tidy_bible %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+bible_words$word<- removeNumbers(bible_words$word)
+
+bible_words<-bible_words %>% 
+  filter(bible_words$word != "")
+
+View(bible_words)
+#-----------------------------------------------------------------
+gospel_words<-tidy_gospel %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+gospel_words$word<- removeNumbers(gospel_words$word)
+
+gospel_words<-gospel_words %>% 
+  filter(gospel_words$word != "")
+
+View(gospel_words)
+#-----------------------------------------------------------------
+#KORAN
+koran_csv<-read.csv(file = "../koran_csv.csv",
+         skip = 146,
+         col.names = c("line", "text"),
+         )
+
+tidy_koran<-koran_csv %>% 
+  filter(line<14260) %>% 
+  mutate(line = row_number())
+
+koran_words<-tidy_koran %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+koran_words$word<- removeNumbers(koran_words$word)
+
+koran_words<-koran_words %>% 
+  filter(koran_words$word != "")
+
+View(koran_words)
+
+```
+
+
+```{r}
+bible_words<-bible_words %>% 
+  mutate(book = "Bible")
+
+View(bible_words)
+
+gospel_words<-gospel_words %>% 
+  mutate(book = "Gospel")
+
+View(gospel_words)
+
+koran_words<-koran_words %>% 
+  mutate(book = "Koran")
+
+View(koran_words)
+
+biggest_monotheists<-full_join(bible_words, gospel_words) %>% 
+  full_join(koran_words) %>% 
+  arrange(n, desc(n))
+
+View(biggest_monotheists)
+
+total_words <- biggest_monotheists %>% 
+  group_by(book) %>% 
+  summarize(total = sum(n))
+
+View(total_words)
+
+biggest_monotheists <- 
+  left_join(biggest_monotheists, total_words) %>% 
+  arrange(desc(n))
+
+View(biggest_monotheists)
+#------------------------------------------------------------
+```
+
+
+```{r}
+# term frequency distribution
+biggest_mono_distribution_plot<-biggest_monotheists %>% 
+  ggplot(aes(n / total, fill = book)) +
+  geom_histogram(show.legend = FALSE) +
+  theme_bw() +
+  labs( x = "\nTerm distribution among the\n3 biggest monotheist religion's sacred texts", y="") +
+  theme(text=element_text(family="Noto Sans", size=14), axis.text.x=element_blank()) + 
+  xlim(NA, 0.0009) +
+  facet_wrap(~book, ncol = 3, scales = "free_y")
+
+biggest_mono_distribution_plot
+ggsave("biggest_mono_distribution_plot.png", plot = biggest_mono_distribution_plot, width = 9, height=3)
+
+```
+
+
+```{r}
+#----------------------------------------------------
+#ZIPF'S LAW
+freq_by_rank <- biggest_monotheists %>% 
+  group_by(book) %>% 
+  mutate(rank = row_number(), 
+         `term frequency` = n/total)
+
+View(freq_by_rank)
+
+rank_subset <- freq_by_rank %>% 
+  filter(rank < 500,
+         rank > 10)
+
+mod = lm(log10(`term frequency`) ~ log10(rank), data = rank_subset)
+
+biggest_mono_rank_plot<-freq_by_rank %>% 
+  ggplot(aes(rank, `term frequency`, color = book)) + 
+  geom_abline(intercept = mod$coefficients[1], 
+              slope = mod$coefficients[2], 
+              color = "gray50", 
+              linetype = 2) +
+  geom_line(size = 1.1, alpha = 0.8, show.legend = TRUE) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  labs( x = "Rank", y="Term frequency") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_mono_rank_plot
+
+ggsave("biggest_mono_rank_plot.png", plot = biggest_mono_rank_plot, width=10, height=5)
+```
+
+
+```{r}
+#---------------------------------------------------------
+#TF-IDF
+biggest_monotheists<-biggest_monotheists %>% 
+  bind_tf_idf(word, book, n) %>% 
+  select(-total) %>%
+  arrange(desc(tf_idf))
+
+View(biggest_monotheists)
+
+biggest_mono_tf_idf_plot<-biggest_monotheists %>%
+  arrange(desc(tf_idf)) %>%
+  group_by(book) %>% 
+  top_n(10, tf_idf) %>% 
+  ungroup %>%
+  mutate(word = reorder(word, tf_idf)) %>%
+  ggplot(aes(word, tf_idf, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  labs(x = NULL, y = "tf-idf") +
+  facet_wrap(~book, ncol = 3, scales = "free") +
+  coord_flip() +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_mono_tf_idf_plot
+
+ggsave("biggest_mono_tf_idf_plot.png", plot = biggest_mono_tf_idf_plot, width=9, height=3)
+```
+
+
+```{r}
+#--------------------------------------------------------------------------------
+#TRIGRAMS
+#Decido di analizzare i trigrams, perchè i bigrams mi hanno prodotto risultati non interessanti.
+
+#OLD TESTAMENT
+bible_trigrams <- tidy_bible %>%
+  unnest_tokens(trigram, text, token = "ngrams", n = 3)
+
+bible_trigrams$trigram<-gsub("0",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("1",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("2",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("3",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("4",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("5",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("6",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("7",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("8",NA,as.character(bible_trigrams$trigram))
+bible_trigrams$trigram<-gsub("9",NA,as.character(bible_trigrams$trigram))
+
+bible_trigrams<-bible_trigrams[!is.na(bible_trigrams$trigram), ]
+
+
+bible_trigrams<-bible_trigrams %>%
+  count(trigram, sort = TRUE)
+
+View(bible_trigrams)
+#--------------------------------------------------------------------------------
+#NEW TESTAMENT
+gospel_trigrams <- tidy_gospel %>%
+  unnest_tokens(trigram, text, token = "ngrams", n = 3)
+
+gospel_trigrams$trigram<-gsub("0",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("1",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("2",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("3",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("4",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("5",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("6",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("7",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("8",NA,as.character(gospel_trigrams$trigram))
+gospel_trigrams$trigram<-gsub("9",NA,as.character(gospel_trigrams$trigram))
+
+gospel_trigrams<-gospel_trigrams[!is.na(gospel_trigrams$trigram), ]
+
+
+gospel_trigrams<-gospel_trigrams %>%
+  count(trigram, sort = TRUE)
+
+View(gospel_trigrams)
+#--------------------------------------------------------------------------------
+#KORAN
+koran_trigrams <- tidy_koran %>%
+  unnest_tokens(trigram, text, token = "ngrams", n = 3)
+
+koran_trigrams$trigram<-gsub("0",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("1",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("2",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("3",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("4",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("5",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("6",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("7",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("8",NA,as.character(koran_trigrams$trigram))
+koran_trigrams$trigram<-gsub("9",NA,as.character(koran_trigrams$trigram))
+
+koran_trigrams<-koran_trigrams[!is.na(koran_trigrams$trigram), ]
+
+
+koran_trigrams<-koran_trigrams %>%
+  count(trigram, sort = TRUE)
+
+View(koran_trigrams)
+#--------------------------------------------------------------------------------
+bible_trigrams<- bible_trigrams %>% 
+  mutate(book = "Bible")
+
+gospel_trigrams<- gospel_trigrams %>% 
+  mutate(book = "Gospel")
+
+koran_trigrams<- koran_trigrams %>% 
+  mutate(book = "Koran")
+#--------------------------------------------------------------------------------
+
+```
+
+
+```{r}
+#--------------------------------------------------------------------------------
+#common word occurencies
+
+exclude<-data.frame("line" = c(2,3,4,7,12, 15))
+
+tmp<-inner_join(bible_words, gospel_words, by="word") %>% 
+  inner_join(koran_words, by="word") %>% 
+  mutate(line=row_number()) %>% 
+  anti_join(exclude, by="line") %>% 
+  mutate(line=row_number()) %>% 
+  filter(line<=10) %>% 
+  select(word)
+  
+
+biggest_mono_commons<-full_join(bible_words, gospel_words) %>%
+  full_join(koran_words) %>% 
+  inner_join(tmp, by="word") %>% 
+  inner_join(total_words, by="book")
+  
+  
+View(tmp)
+
+View(biggest_mono_commons)
+
+biggest_mono_commons_plot<-biggest_mono_commons %>% 
+  ggplot(aes(x=book, y=n/total, fill=book)) +
+  geom_col(show.legend = TRUE) +
+  theme_bw() +
+  labs( x = "\n10 top common words in the\n3 biggest monotheist religion's sacred texts", y="") +
+  theme(text=element_text(family="Noto Sans", size=14), axis.text.x=element_blank()) + 
+  facet_wrap(~word, ncol = 5, scales = "free_y")
+
+biggest_mono_commons_plot
+
+ggsave("biggest_mono_commons_plot.png", biggest_mono_commons_plot, width=17, height=7)
+```
+
+
+```{r}
+#--------------------------------------------------------------------------------
+#common trigram occurencies
+
+View(bible_trigrams)
+
+View(koran_trigrams)
+
+View(gospel_trigrams)
+
+exclude<-data.frame("line" = c(2,3,4,7))
+
+tmp_2<-inner_join(bible_trigrams, gospel_trigrams, by="trigram") %>% 
+  inner_join(koran_trigrams, by="trigram") %>% 
+  mutate(line=row_number()) %>% 
+  filter(line<=20) %>% 
+  select(trigram)
+  
+View(tmp_2)
+
+#Analyzing bigrams has been a failure, the books don't have any bigram that occurs more than 1 time, as for trigrams the situation was different, there were many trigrams, even some in commmon, but the common trigrams that occured most of the time in all the 3 books weren't interesting at all, so I decided to only analize single words in this project.
+```
+
+
+```{r}
+#Now the 3 biggest asian religions sacred texts
+#-----------------------------------------------------------------
+#RIG_VEDA
+rig_veda_csv<-read.csv(file = "../rig_veda_csv.csv",
+         skip = 171,
+         col.names = c("line", "text"),
+         )
+
+tidy_rig_veda<-rig_veda_csv %>% 
+  filter(line<2021) %>% 
+  mutate(line = row_number())
+
+rig_veda_words<-tidy_rig_veda %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+View(rig_veda_words)
+
+rig_veda_words$word<- removeNumbers(rig_veda_words$word)
+
+rig_veda_words<-rig_veda_words %>% 
+  filter(rig_veda_words$word != "") %>% 
+  unique()
+
+View(rig_veda_words)
+```
+
+
+```{r}
+#----------NON FUNZIONA-----------------------
+#In this book there are many words that aren't in english, i'm going to do an anti join with an english dictionary
+
+A<-read.csv("./English word list/Aword.csv") %>% 
+  unique() %>% 
+  rename(word=a)
+B<-read.csv("./English word list/Bword.csv") %>% 
+  unique()  %>% 
+  rename(word=b)
+C<-read.csv("./English word list/Cword.csv") %>% 
+  unique()  %>% 
+  rename(word=c)
+D<-read.csv("./English word list/Dword.csv") %>% 
+  unique()  %>% 
+  rename(word=d)
+E<-read.csv("./English word list/Eword.csv") %>% 
+  unique() %>% 
+  rename(word=e)
+F_<-read.csv("./English word list/Fword.csv") %>% 
+  unique() %>% 
+  rename(word=f)
+G<-read.csv("./English word list/Gword.csv") %>% 
+  unique() %>% 
+  rename(word=g)
+H<-read.csv("./English word list/Hword.csv") %>% 
+  unique() %>% 
+  rename(word=h)
+I<-read.csv("./English word list/Iword.csv") %>% 
+  unique() %>% 
+  rename(word=i)
+J<-read.csv("./English word list/Jword.csv") %>% 
+  unique() %>% 
+  rename(word=j)
+K<-read.csv("./English word list/Kword.csv") %>% 
+  unique() %>% 
+  rename(word=k)
+L<-read.csv("./English word list/Lword.csv") %>% 
+  unique() %>% 
+  rename(word=l)
+M<-read.csv("./English word list/Mword.csv") %>% 
+  unique() %>% 
+  rename(word=m)
+N<-read.csv("./English word list/Nword.csv") %>% 
+  unique() %>% 
+  rename(word=n)
+O<-read.csv("./English word list/Oword.csv") %>% 
+  unique() %>% 
+  rename(word=o)
+P<-read.csv("./English word list/Pword.csv") %>% 
+  unique() %>% 
+  rename(word=p)
+Q<-read.csv("./English word list/Qword.csv") %>% 
+  unique() %>% 
+  rename(word=q)
+R<-read.csv("./English word list/Rword.csv") %>% 
+  unique() %>% 
+  rename(word=r)
+S<-read.csv("./English word list/Sword.csv") %>% 
+  unique() %>% 
+  rename(word=s)
+T_<-read.csv("./English word list/Tword.csv") %>% 
+  unique() %>% 
+  rename(word=t)
+U<-read.csv("./English word list/Uword.csv") %>% 
+  unique() %>% 
+  rename(word=u)
+V<-read.csv("./English word list/Vword.csv") %>% 
+  unique() %>% 
+  rename(word=v)
+W<-read.csv("./English word list/Wword.csv") %>% 
+  unique() %>% 
+  rename(word=w)
+X<-read.csv("./English word list/Xword.csv") %>% 
+  unique() %>% 
+  rename(word=x)
+Y<-read.csv("./English word list/Yword.csv") %>% 
+  unique() %>% 
+  rename(word=y)
+Z<-read.csv("./English word list/Zword.csv") %>% 
+  unique() %>% 
+  rename(word=z)
+
+word_list<-A %>%
+  full_join(B) %>% 
+  full_join(C) %>% 
+  full_join(D) %>% 
+  full_join(E) %>% 
+  full_join(F_) %>% 
+  full_join(G) %>% 
+  full_join(H) %>% 
+  full_join(I) %>% 
+  full_join(J) %>% 
+  full_join(K) %>% 
+  full_join(L) %>% 
+  full_join(M) %>% 
+  full_join(N) %>% 
+  full_join(O) %>% 
+  full_join(P) %>% 
+  full_join(Q) %>% 
+  full_join(R) %>% 
+  full_join(S) %>% 
+  full_join(T_) %>% 
+  full_join(U) %>% 
+  full_join(V) %>% 
+  full_join(W) %>% 
+  full_join(X) %>% 
+  full_join(Y) %>% 
+  full_join(Z)
+
+View(word_list)
+
+write.csv(word_list, "word_list_csv.csv", col.names = "word")
+
+word_list_csv<-read.csv("word_list_csv.csv") %>% 
+  select(word) %>% 
+  unique()
+
+View(word_list_csv)
+
+rig_veda_words<- bible_words %>% 
+  inner_join(word_list_csv)
+
+View(rig_veda_words)
+
+rig_veda_words_vector<-wordStem(rig_veda_words[[1]], "en")
+
+View(rig_veda_words_vector)
+
+library("cld3")
+rig_veda_words_vector<-subset(rig_veda_words, detect_language(rig_veda_words$word) == "en")
+View(rig_veda_words_vector)
+```
+
+
+```{r}
+#Rimuovo manualmente le parole che non mi vanno bene, lasciando solo le parole che appaiono più di 10 volte.
+extract<-data.frame("line"=c(1, 3:6, 10:21, 24:31, 34:39, 41:43, 45:49, 54:60, 62, 64:67, 72, 77, 78, 80, 83:85, 92, 93, 95, 97, 98, 100, 101, 104:106))
+
+rig_veda_top_words<-rig_veda_words %>% 
+  mutate(line=row_number()) %>% 
+  anti_join(extract, by="line") %>% 
+  mutate(line=row_number()) %>%
+  filter(n>=10)
+
+View(rig_veda_top_words)
+```
+
+
+```{r}
+#----------------------------------------------------------------
+#DHAMMAPADA
+dhammapada_csv<-read.csv(file = "../dhammapada_csv.csv",
+         skip = 298,
+         col.names = c("line", "text"),
+         )
+
+tidy_dhammapada<-dhammapada_csv %>% 
+  filter(line<2449) %>% 
+  mutate(line = row_number())
+
+dhammapada_words<-tidy_dhammapada %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+dhammapada_words$word<- removeNumbers(dhammapada_words$word)
+
+dhammapada_words<-dhammapada_words %>% 
+  filter(dhammapada_words$word != "")
+
+
+View(dhammapada_words)
+
+extract<-data.frame("line" = c(1, 3, 4, 7, 9, 12:14, 17, 19, 20, 29, 30, 35, 39, 40, 48, 53, 64, 68, 76))
+
+dhammapada_top_words<-dhammapada_words %>% 
+  mutate(line=row_number()) %>% 
+  anti_join(extract, by="line") %>% 
+  mutate(line=row_number()) %>%
+  filter(n>=10)
+
+View(dhammapada_top_words)
+```
+
+
+```{r}
+#--------------------------------------------------------------
+#GRANTH SAHIB
+granth_sahib_csv<-read.csv(file = "../granth_sahib_csv.csv",
+         skip = 14,
+         col.names = c("line", "text"),
+         )
+
+tidy_granth_sahib<-granth_sahib_csv %>% 
+  mutate(line = row_number())
+
+granth_sahib_words<-tidy_granth_sahib %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+granth_sahib_words$word<- removeNumbers(granth_sahib_words$word)
+
+granth_sahib_words<-granth_sahib_words %>% 
+  filter(granth_sahib_words$word != "")
+
+View(granth_sahib_words)
+
+extract<-data.frame("line" = c(1, 3:10, 12, 14:18, 20, 21, 23:31, 33:53, 56:60, 62, 63, 65, 67, 68, 71:79, 81:83, 85:87, 89, 90, 92:109, 111, 114:116, 118:122, 124, 125, 128:133, 135, 136, 138:140, 142, 145:147, 149, 152:163))
+
+granth_sahib_top_words<-granth_sahib_words %>% 
+  mutate(line=row_number()) %>% 
+  anti_join(extract, by="line") %>% 
+  mutate(line=row_number()) %>%
+  filter(n>=1000)
+
+View(granth_sahib_top_words)
+```
+
+
+```{r}
+rig_veda_words<-rig_veda_words %>% 
+  mutate(book="Rig Veda") %>% 
+  mutate(total=sum(n))
+
+dhammapada_words<-dhammapada_words %>% 
+  mutate(book="Dhammapada") %>% 
+  mutate(total=sum(n))
+
+granth_sahib_words<-granth_sahib_words %>% 
+  mutate(book="Granth Sahib") %>% 
+  mutate(total=sum(n))
+
+biggest_asians<-full_join(rig_veda_words, dhammapada_words) %>% 
+  full_join(granth_sahib_words) 
+
+View(biggest_asians)
+#Now plotting the term frequency distribution of the books:
+
+biggest_asians_distribution_plot<-biggest_asians %>% 
+  ggplot(aes(n/total, fill = book)) +
+  geom_histogram(show.legend = TRUE) +
+  theme_bw() +
+  labs( x = "\nTerm distribution among the\n3 biggest asian religion's sacred texts", y="") +
+  theme(text=element_text(family="Noto Sans", size=14), axis.text.x=element_blank()) + 
+  #xlim(NA, 0.0009) +
+  facet_wrap(~book, ncol = 3, scales = "free_y")
+
+biggest_asians_distribution_plot
+ggsave("biggest_asians_distribution_plot.png", plot = biggest_asians_distribution_plot, width = 11, height=3)
+
+#In questi 3 libri è ancora più evidente che vengono usate moltissime volte poche parole, e poche volte molte parole.
+#Ora plotto il grafico del rango vs la frequenza
+```
+
+
+```{r}
+#----------------------------------------------------
+#ZIPF'S LAW
+freq_by_rank <- biggest_asians %>% 
+  group_by(book) %>% 
+  mutate(rank = row_number(), 
+         `term frequency` = n/total)
+
+View(freq_by_rank)
+
+rank_subset <- freq_by_rank %>% 
+  filter(rank < 500,
+         rank > 10)
+
+mod = lm(log10(`term frequency`) ~ log10(rank), data = rank_subset)
+
+biggest_asians_rank_plot<-freq_by_rank %>% 
+  ggplot(aes(rank, `term frequency`, color = book)) + 
+  geom_abline(intercept = mod$coefficients[1], 
+              slope = mod$coefficients[2], 
+              color = "gray50", 
+              linetype = 2) +
+  geom_line(size = 1.1, alpha = 0.8, show.legend = TRUE) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  labs( x = "Rank", y="Term frequency") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_asians_rank_plot
+
+ggsave("biggest_asians_rank_plot.png", plot = biggest_asians_rank_plot, width=10, height=5)
+```
+
+
+```{r}
+#We can see that Dhammapada and Rig veda are a lot shorter than the Adi Granth, then I'm going to plot all the monotheist religions together to see if there are similarities
+#Now, i''m going to analise tf-idf, but only with the top words I exctracted manually.
+rig_veda_top_words<-rig_veda_top_words %>% 
+  mutate(book="Rig Veda") %>% 
+  mutate(total=sum(n))
+
+dhammapada_top_words<-dhammapada_top_words %>% 
+  mutate(book="Dhammapada") %>% 
+  mutate(total=sum(n))
+
+granth_sahib_top_words<-granth_sahib_top_words %>% 
+  mutate(book="Granth Sahib") %>% 
+  mutate(total=sum(n))
+
+biggest_asians_top<-full_join(rig_veda_top_words, dhammapada_top_words) %>% 
+  full_join(granth_sahib_top_words) 
+#TF-IDF
+biggest_asians_top<-biggest_asians_top %>% 
+  bind_tf_idf(word, book, n) %>% 
+  select(-total) %>%
+  arrange(desc(tf_idf))
+
+View(biggest_asians_top)
+
+biggest_asians_tf_idf_plot<-biggest_asians_top %>%
+  arrange(desc(tf_idf)) %>%
+  group_by(book) %>% 
+  top_n(10, tf_idf) %>% 
+  ungroup %>%
+  mutate(word = reorder(word, tf_idf)) %>%
+  ggplot(aes(word, tf_idf, fill = book)) +
+  geom_col(show.legend = TRUE) +
+  labs(x = NULL, y = "tf-idf") +
+  facet_wrap(~book, ncol = 3, scales = "free") +
+  coord_flip() +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_asians_tf_idf_plot
+
+ggsave("biggest_asians_tf_idf_plot.png", plot = biggest_asians_tf_idf_plot, width=11, height=3)
+```
+
+
+```{r}
+#ora analizzo le parole in comune tra le religioni asiatiche
+
+extract<-data.frame("line"=c(3,4))
+
+tmp<-inner_join(rig_veda_words, dhammapada_words, by="word") %>% 
+  inner_join(granth_sahib_words, by="word") %>% 
+  select(word) %>% 
+  mutate(line=row_number()) %>% 
+  anti_join(extract, by="line") %>%
+  mutate(line=row_number()) %>% 
+  filter(line<=10)
+
+View(tmp)
+
+biggest_asians_commons<-biggest_asians %>% 
+  inner_join(tmp) %>% 
+  mutate(frequency=n/total) %>% 
+  select(word, n, book, total, frequency) 
+
+View(biggest_asians_commons)
+
+biggest_asians_commons_plot<-biggest_asians_commons %>% 
+  ggplot(aes(x=book, y=n/total, fill=book)) +
+  geom_col(show.legend = TRUE) +
+  theme_bw() +
+  labs( x = "\n10 top common words in the\n3 biggest asian religion's sacred texts", y="") +
+  theme(text=element_text(family="Noto Sans", size=14), axis.text.x=element_blank()) + 
+  facet_wrap(~word, ncol = 5, scales = "free_y")
+
+biggest_asians_commons_plot
+
+ggsave("biggest_asians_commons_plot.png", biggest_asians_commons_plot, width=17, height=7)
+```
+
+
+```{r}
+#ora faccio un tentativo di rilevare i bigrams ed i trigrams
+#RIG VEDA
+rig_veda_bigrams <- tidy_rig_veda %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)
+
+rig_veda_bigrams$bigram<-gsub("0",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("1",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("2",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("3",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("4",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("5",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("6",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("7",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("8",NA,as.character(rig_veda_bigrams$bigram))
+rig_veda_bigrams$bigram<-gsub("9",NA,as.character(rig_veda_bigrams$bigram))
+
+rig_veda_bigrams<-rig_veda_bigrams[!is.na(rig_veda_bigrams$bigram), ]
+
+
+rig_veda_bigrams<-rig_veda_bigrams %>%
+  count(bigram, sort = TRUE) %>% 
+  filter(str_detect(bigram, "god"))
+
+View(rig_veda_bigrams)
+#--------------------------------------------------------------------------------
+#DHAMMAPADA
+dhammapada_bigrams <- tidy_dhammapada %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)
+
+dhammapada_bigrams$bigram<-gsub("0",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("1",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("2",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("3",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("4",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("5",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("6",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("7",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("8",NA,as.character(dhammapada_bigrams$bigram))
+dhammapada_bigrams$bigram<-gsub("9",NA,as.character(dhammapada_bigrams$bigram))
+
+dhammapada_bigrams<-dhammapada_bigrams[!is.na(dhammapada_bigrams$bigram), ]
+
+
+dhammapada_bigrams<-dhammapada_bigrams %>%
+  count(bigram, sort = TRUE) %>% 
+  filter(str_detect(bigram, "god"))
+
+View(dhammapada_bigrams)
+#--------------------------------------------------------------------------------
+rig_veda_bigrams<- rig_veda_bigrams %>% 
+  mutate(book = "rig_veda")
+
+dhammapada_bigrams<- dhammapada_bigrams %>% 
+  mutate(book = "dhammapada")
+#--------------------------------------------------------------------------------
+#RIG VEDA
+rig_veda_trigrams <- tidy_rig_veda %>%
+  unnest_tokens(trigram, text, token = "ngrams", n = 3)
+
+rig_veda_trigrams$trigram<-gsub("0",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("1",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("2",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("3",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("4",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("5",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("6",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("7",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("8",NA,as.character(rig_veda_trigrams$trigram))
+rig_veda_trigrams$trigram<-gsub("9",NA,as.character(rig_veda_trigrams$trigram))
+
+rig_veda_trigrams<-rig_veda_trigrams[!is.na(rig_veda_trigrams$trigram), ]
+
+
+rig_veda_trigrams<-rig_veda_trigrams %>%
+  count(trigram, sort = TRUE) %>% 
+  filter(str_detect(trigram, "god of"))
+
+View(rig_veda_trigrams)
+#--------------------------------------------------------------------------------
+#DHAMMAPADA
+dhammapada_trigrams <- tidy_dhammapada %>%
+  unnest_tokens(trigram, text, token = "ngrams", n = 3)
+
+dhammapada_trigrams$trigram<-gsub("0",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("1",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("2",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("3",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("4",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("5",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("6",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("7",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("8",NA,as.character(dhammapada_trigrams$trigram))
+dhammapada_trigrams$trigram<-gsub("9",NA,as.character(dhammapada_trigrams$trigram))
+
+dhammapada_trigrams<-dhammapada_trigrams[!is.na(dhammapada_trigrams$trigram), ]
+
+
+dhammapada_trigrams<-dhammapada_trigrams %>%
+  count(trigram, sort = TRUE) %>% 
+  filter(str_detect(trigram, "god"))
+
+View(dhammapada_trigrams)
+#--------------------------------------------------------------------------------
+rig_veda_trigrams<- rig_veda_trigrams %>% 
+  mutate(book = "rig_veda")
+
+dhammapada_trigrams<- dhammapada_trigrams %>% 
+  mutate(book = "dhammapada")
+#--------------------------------------------------------------------------------
+#Volevo cercare quali fossero gli dei più presenti all'interno dei testi sacri delle religioni politeiste, ma da questa analisi ho dedotto che "il dio del/della ..." viene annunciato una sola volta, quindi l'analisi ha prodotto risultati non interessanti.
+```
+
+
+```{r}
+#Ora, per concludere questa parte, analizzo tutte le religioni monoteiste dato che la cosa più interessante che ho trovato in questa analisi, e una curiosità che è venuta fuori dalla scorsa analisi, è stata che il sikhismo, nonostante faccia parte di un altra radice religiosa, ha molte cose in comune con le 3 grandi religioni monoteiste:
+biggest_monotheists_extended<-biggest_monotheists %>% 
+  full_join(granth_sahib_words) %>% 
+  select(word, n, book, total)
+
+View(biggest_monotheists_extended)
+
+biggest_mono_ext_distribution_plot<-biggest_monotheists_extended %>% 
+  ggplot(aes(n / total, fill = book)) +
+  geom_histogram(show.legend = TRUE) +
+  theme_bw() +
+  labs( x = "\nTerm distribution among the\n main monotheist religion's sacred texts", y="") +
+  theme(text=element_text(family="Noto Sans", size=14), axis.text.x=element_blank()) + 
+  xlim(NA, 0.0009) +
+  facet_wrap(~book, ncol = 4, scales = "free_y")
+
+biggest_mono_ext_distribution_plot
+ggsave("biggest_mono_ext_distribution_plot.png", plot = biggest_mono_ext_distribution_plot, width = 11, height=3)
+
+#nulla di strano fin qui
+#----------------------------------------------------
+#ZIPF'S LAW
+freq_by_rank <- biggest_monotheists_extended %>% 
+  group_by(book) %>% 
+  mutate(rank = row_number(), 
+         `term frequency` = n/total)
+
+View(freq_by_rank)
+
+rank_subset <- freq_by_rank %>% 
+  filter(rank < 500,
+         rank > 10)
+
+mod = lm(log10(`term frequency`) ~ log10(rank), data = rank_subset)
+
+biggest_mono_ext_rank_plot<-freq_by_rank %>% 
+  ggplot(aes(rank, `term frequency`, color = book)) + 
+  geom_abline(intercept = mod$coefficients[1], 
+              slope = mod$coefficients[2], 
+              color = "gray50", 
+              linetype = 2) +
+  geom_line(size = 1.1, alpha = 0.8, show.legend = TRUE) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  labs( x = "Rank", y="Term frequency") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_mono_ext_rank_plot
+
+ggsave("biggest_mono_ext_rank_plot.png", plot = biggest_mono_ext_rank_plot, width=10, height=5)
+
+#now the tf-idf
+#---------------------------------------------------------
+#TF-IDF
+biggest_monotheists_extended<-granth_sahib_top_words %>% 
+  top_n(10, n) %>%
+  full_join(biggest_monotheists) %>% 
+  select(word, n, book, total) %>%  
+  arrange(n, desc(n)) %>% 
+  bind_tf_idf(word, book, n) %>% 
+  select(-total) %>%
+  arrange(desc(tf_idf)) %>% 
+  mutate(word=replace(word, word=="ye", NA)) %>% 
+  mutate(word=replace(word, word=="thou", NA)) %>% 
+  mutate(word=replace(word, word=="thy", NA)) %>%
+  mutate(word=replace(word, word=="shalt", NA)) %>% 
+  mutate(word=replace(word, word=="saith", NA)) %>% 
+  mutate(word=replace(word, word=="mãš", NA)) %>% 
+  mutate(word=replace(word, word=="aa", NA)) %>% 
+  mutate(word=replace(word, word=="ay", NA)) %>% 
+  mutate(word=replace(word, word=="har", NA)) %>% 
+  mutate(word=replace(word, word=="ee", NA)) %>% 
+  mutate(word=replace(word, word=="gauvi", NA)) %>% 
+  mutate(word=replace(word, word=="hir", NA)) %>% 
+  mutate(word=replace(word, word=="na", NA)) %>% 
+  mutate(word=replace(word, word=="awusu", NA)) %>% 
+  drop_na()
+
+View(biggest_monotheists_extended)
+
+biggest_mono_ext_tf_idf_plot<-biggest_monotheists_extended %>%
+  arrange(desc(tf_idf)) %>%
+  group_by(book) %>% 
+  top_n(10, tf_idf) %>% 
+  ungroup %>%
+  mutate(word = reorder(word, tf_idf)) %>%
+  ggplot(aes(word, tf_idf, fill = book)) +
+  geom_col(show.legend = TRUE) +
+  labs(x = NULL, y = "tf-idf") +
+  facet_wrap(~book, ncol = 4, scales = "free") +
+  coord_flip() +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_mono_ext_tf_idf_plot
+
+ggsave("biggest_mono_ext_tf_idf_plot.png", plot = biggest_mono_ext_tf_idf_plot, width=11, height=5)
+
+#tf-idf shows that these 4 texts together don't have much in common when it gets do document term frequency, but they display quite similar distributions.
+
+tmp<-inner_join(bible_words, gospel_words, by="word") %>% 
+  inner_join(koran_words, by="word") %>% 
+  inner_join(granth_sahib_words, by="word") %>% 
+  mutate(line=row_number()) %>% 
+  #anti_join(exclude, by="line") %>% 
+  mutate(line=row_number()) %>% 
+  filter(line<=10) %>% 
+  select(word)
+
+View(tmp)
+
+#They don't even have much words in common, so I will not go further, in the end these religions only have similar distributions and sentiments, but when it gets to words they don't have anything in common.
+
+```

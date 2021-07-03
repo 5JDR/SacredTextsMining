@@ -1,0 +1,594 @@
+---
+title: "Topic_modeling_RAW"
+author: "Sandro Junior Della Rovere"
+date: "30/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(topicmodels)
+library(ggplot2)
+library(tidyverse)
+library(tidytext)
+library(dplyr)
+library(tm)
+library(tibble)
+library(extrafont)
+loadfonts(device="win")
+```
+
+
+```{r}
+#------------------------------------------------------------------
+#OLD AND NEW TESTAMENT
+bible_csv<-read.csv(file = "../bible_csv.csv",
+         skip = 82,
+         col.names = c("line", "text"),
+         )
+
+tidy_bible<-bible_csv %>% 
+  filter(line<74727) %>% 
+  mutate(line = row_number())
+#-----------------------------------------------------------------
+tidy_gospel<- tidy_bible %>% 
+  filter(line>57430)
+#-----------------------------------------------------------------
+tidy_bible<-tidy_bible %>% 
+  filter(line<57429)
+
+bible_words<-tidy_bible %>% 
+  unnest_tokens(word, text) %>% 
+  anti_join(stop_words) %>% 
+  arrange(word) %>%
+  mutate(term=word) %>% 
+  select(term)
+
+extract_bible<-data.frame("line"=c(2:4, 7, 12, 15, 18, 20, 22:24, 28, 48, 102, 106, 210, 235, 282, 287, 317, 326))
+
+bible_words$term<- removeNumbers(bible_words$term)
+
+bible_words<-bible_words %>% 
+  filter(bible_words$term != "") %>% 
+  count(term, sort=TRUE) %>% 
+  mutate(count=n) %>% 
+  mutate(document="Bible") %>%
+  mutate(line=row_number()) %>% 
+  anti_join(extract_bible, by="line") %>% 
+  select(document, term, count)
+#-------------------------------------------------------------------------------
+gospel_words<-tidy_gospel %>% 
+  unnest_tokens(word, text) %>% 
+  anti_join(stop_words) %>% 
+  arrange(word) %>%
+  mutate(term=word) %>% 
+  select(term)
+
+extract_gospel<-data.frame("line"=c(1, 4, 6, 8, 10, 13, 24, 113, 147, 176))
+
+gospel_words$term<- removeNumbers(gospel_words$term)
+
+gospel_words<-gospel_words %>% 
+  filter(gospel_words$term != "") %>% 
+  count(term, sort=TRUE) %>% 
+  mutate(count=n) %>% 
+  mutate(document="Gospel") %>%
+  mutate(line=row_number()) %>% 
+  anti_join(extract_gospel, by="line") %>% 
+  select(document, term, count)
+  
+
+View(bible_words)
+
+View(gospel_words)
+
+#--------------------------------------------------------------------------------
+#KORAN
+koran_csv<-read.csv(file = "koran_csv.csv",
+         skip = 146,
+         col.names = c("line", "text"),
+         )
+
+tidy_koran<-koran_csv %>% 
+  filter(line<14260) %>% 
+  mutate(line = row_number())
+
+koran_words<-tidy_koran %>% 
+  unnest_tokens(word, text) %>% 
+  anti_join(stop_words) %>% 
+  arrange(word) %>%
+  mutate(term=word) %>% 
+  select(term)
+
+extract_koran<-data.frame("line" = c(2, 3, 5:7, 9, 38, 39, 177))
+
+koran_words$term<- removeNumbers(koran_words$term)
+
+koran_words<-koran_words %>% 
+  filter(koran_words$term != "") %>% 
+  mutate(line=row_number()) %>% 
+  filter(line>31) %>% 
+  count(term, sort=TRUE) %>% 
+  mutate(count=n) %>% 
+  mutate(document="Koran") %>%
+  mutate(line=row_number()) %>% 
+  anti_join(extract_koran, by="line") %>% 
+  select(document, term, count)
+
+View(koran_words)
+```
+
+
+```{r}
+#Building dtm
+#first as dataframe
+biggest_mono_dtm_df<-bible_words %>% 
+  full_join(gospel_words) %>% 
+  full_join(koran_words)
+
+View(biggest_mono_dtm_df)
+
+biggest_mono_dtm_tibble<-as_tibble(biggest_mono_dtm_df)
+
+#then as tibble
+
+is_tibble(biggest_mono_dtm_tibble)
+
+biggest_mono_dtm<-biggest_mono_dtm_tibble %>% 
+  cast_dtm(document, term, count)
+
+biggest_mono_dtm
+
+#Latent Dirichlet allocation
+
+biggest_mono_lda<-LDA(biggest_mono_dtm, k=3, control=list(seed=1234))
+
+biggest_mono_topics<-tidy(biggest_mono_lda, matrix="beta")
+
+View(biggest_mono_topics)
+
+#top 10 terms for each topic
+
+biggest_mono_top_terms <- biggest_mono_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+View(biggest_mono_top_terms)
+```
+
+
+```{r}
+#-----------------------------------------------------------------------------------------
+#Word topic probabilities
+
+biggest_mono_top_terms_plot<-biggest_mono_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  theme_light() +
+  labs( x = "Term", y = "Beta") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+
+
+biggest_mono_top_terms_plot
+
+ggsave("biggest_mono_top_terms_plot.png", plot = biggest_mono_top_terms_plot, width = 11, height=3)
+```
+
+
+```{r}
+#Topic modeling only on old and new testament
+bible_gospel_dtm_df<-bible_words %>% 
+  full_join(gospel_words)
+
+View(bible_gospel_dtm_df)
+
+bible_gospel_dtm_tibble<-as_tibble(bible_gospel_dtm_df)
+
+#then as tibble
+
+is_tibble(bible_gospel_dtm_tibble)
+
+bible_gospel_dtm<-bible_gospel_dtm_tibble %>% 
+  cast_dtm(document, term, count)
+
+bible_gospel_dtm
+
+#Latent Dirichlet allocation
+
+bible_gospel_lda<-LDA(bible_gospel_dtm, k=2, control=list(seed=1234))
+
+bible_gospel_topics<-tidy(bible_gospel_lda, matrix="beta")
+
+View(bible_gospel_topics)
+
+#top 10 terms for each topic
+
+bible_gospel_top_terms <- bible_gospel_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+View(bible_gospel_top_terms)
+```
+
+
+```{r}
+#-----------------------------------------------------------------------------------------
+#Word topic probabilities
+
+bible_gospel_top_terms_plot<-bible_gospel_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  theme_light() +
+  labs( x = "Term", y = "Beta") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+bible_gospel_top_terms_plot
+
+ggsave("bible_gospel_top_terms_plot.png", plot = bible_gospel_top_terms_plot, width = 7, height=3)
+
+#As an alternative, we could consider the terms that had the greatest difference in β between Bible and Gospel
+
+bg_beta_spread <- bible_gospel_topics %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  spread(topic, beta) %>%
+  # filter for relatively common words
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+
+bible_gospel_beta_spread_plot<-bg_beta_spread %>%
+  group_by(direction = log_ratio > 0) %>%
+  top_n(10, abs(log_ratio)) %>%
+  ungroup() %>%
+  mutate(term = reorder(term, log_ratio)) %>%
+  ggplot(aes(term, log_ratio, fill = direction)) +
+  geom_col(show.legend = FALSE) +
+  labs(x = "Terms", y = "Log2 ratio of beta in topics 2/1") +
+  coord_flip() +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+bible_gospel_beta_spread_plot
+
+
+ggsave("bible_gospel_beta_spread_plot.png", plot = bible_gospel_beta_spread_plot, width = 7, height=7)
+
+
+#Parole come "ascesa", "tabernacolo", "pane", "ritorno" sono più caratteristiche dei vangeli, mentre parole come "Giosuè", "uccidere", "paura", "grazia" appartengono di più alla Bibbia.
+```
+
+
+```{r}
+#NOW THE 3 BIGGEST ASIANS.
+#TIDY DATA
+#Inizio dal Rig Veda (Induismo)
+rig_veda_csv<-read.csv(file = "../rig_veda_csv.csv",
+         skip = 171,
+         col.names = c("line", "text"),
+         )
+
+tidy_rig_veda<-rig_veda_csv %>% 
+  filter(line<2021) %>% 
+  mutate(line = row_number())
+
+rig_veda_words<-tidy_rig_veda %>% 
+  unnest_tokens(word, text) %>% 
+  anti_join(stop_words) %>% 
+  arrange(word) %>%
+  mutate(term=word) %>% 
+  select(term)
+
+extract_rig_veda<-data.frame("line"=c(1, 3:6, 10:21, 24:31, 34:39, 41:43, 45:49, 54:60, 62, 64:67, 72, 77, 78, 80, 83:85, 92, 93, 95, 97, 98, 100, 101, 104:106))
+
+rig_veda_words$term<- removeNumbers(rig_veda_words$term)
+
+rig_veda_words<-rig_veda_words %>% 
+  filter(rig_veda_words$term != "") %>% 
+  count(term, sort=TRUE) %>% 
+  mutate(count=n) %>% 
+  mutate(document="Rig Veda") %>%
+  mutate(line=row_number()) %>% 
+  anti_join(extract_rig_veda, by="line") %>% 
+  select(document, term, count)
+
+View(rig_veda_words)
+#------------------------------------------------------------------------------------------
+#Now the dhammapada
+dhammapada_csv<-read.csv(file = "../dhammapada_csv.csv",
+         skip = 298,
+         col.names = c("line", "text"),
+         )
+
+tidy_dhammapada<-dhammapada_csv %>% 
+  filter(line<2449) %>% 
+  mutate(line = row_number())
+
+dhammapada_words<-tidy_dhammapada %>% 
+  unnest_tokens(word, text) %>% 
+  anti_join(stop_words) %>% 
+  arrange(word) %>%
+  mutate(term=word) %>% 
+  select(term)
+
+extract_dhammapada<-data.frame("line" = c(1, 3, 4, 7, 9, 12:14, 17, 19, 20, 29, 30, 35, 39, 40, 48, 53, 64, 68, 76))
+
+dhammapada_words$term<- removeNumbers(dhammapada_words$term)
+
+dhammapada_words<-dhammapada_words %>% 
+  filter(dhammapada_words$term != "") %>% 
+  count(term, sort=TRUE) %>% 
+  mutate(count=n) %>% 
+  mutate(document="Dhammapada") %>%
+  mutate(line=row_number()) %>% 
+  anti_join(extract_dhammapada, by="line") %>% 
+  select(document, term, count)
+
+View(dhammapada_words)
+#----------------------------------------------------------------------------
+#Now the granth sahib
+
+granth_sahib_csv<-read.csv(file = "granth_sahib_csv.csv",
+         skip = 14,
+         col.names = c("line", "text"),
+         )
+
+tidy_granth_sahib<-granth_sahib_csv %>% 
+  mutate(line = row_number())
+
+granth_sahib_words<-tidy_granth_sahib %>% 
+  unnest_tokens(word, text) %>% 
+  anti_join(stop_words) %>% 
+  arrange(word) %>%
+  mutate(term=word) %>% 
+  select(term)
+
+extract_granth_sahib<-data.frame("line" = c(1, 3:10, 12, 14:18, 20, 21, 23:31, 33:53, 56:60, 62, 63, 65, 67, 68, 71:79, 81:83, 85:87, 89, 90, 92:109, 111, 114:116, 118:122, 124, 125, 128:133, 135, 136, 138:140, 142, 145:147, 149, 152:163))
+
+granth_sahib_words$term<- removeNumbers(granth_sahib_words$term)
+
+granth_sahib_words<-granth_sahib_words %>% 
+  filter(granth_sahib_words$term != "") %>% 
+  count(term, sort=TRUE) %>% 
+  mutate(count=n) %>% 
+  mutate(document="Granth Sahib") %>%
+  mutate(line=row_number()) %>% 
+  anti_join(extract_granth_sahib, by="line") %>% 
+  select(document, term, count)
+
+View(granth_sahib_words)
+```
+
+
+```{r}
+#Building dtm
+#first as dataframe
+biggest_asians_dtm_df<-rig_veda_words %>% 
+  full_join(dhammapada_words) %>% 
+  full_join(granth_sahib_words)
+
+View(biggest_asians_dtm_df)
+
+biggest_asians_dtm_tibble<-as_tibble(biggest_asians_dtm_df)
+
+#then as tibble
+
+is_tibble(biggest_asians_dtm_tibble)
+
+biggest_asians_dtm<-biggest_asians_dtm_tibble %>% 
+  cast_dtm(document, term, count)
+
+biggest_asians_dtm
+
+#Latent Dirichlet allocation
+
+biggest_asians_lda<-LDA(biggest_asians_dtm, k=3, control=list(seed=1234))
+
+biggest_asians_topics<-tidy(biggest_asians_lda, matrix="beta")
+
+View(biggest_asians_topics)
+
+#top 10 terms for each topic
+
+biggest_asians_top_terms <- biggest_asians_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+View(biggest_asians_top_terms)
+```
+
+
+```{r}
+#-----------------------------------------------------------------------------------------
+#Word topic probabilities
+
+biggest_asians_top_terms_plot<-biggest_asians_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  theme_light() +
+  labs( x = "Term", y = "Beta") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_asians_top_terms_plot
+
+ggsave("biggest_asians_top_terms_plot.png", plot = biggest_asians_top_terms_plot, width = 11, height=3)
+```
+
+
+```{r}
+#Now only on dhammapada and rig veda 
+
+#Building dtm
+#first as dataframe
+biggest_poli_dtm_df<-rig_veda_words %>% 
+  full_join(dhammapada_words)
+
+View(biggest_poli_dtm_df)
+
+biggest_poli_dtm_tibble<-as_tibble(biggest_poli_dtm_df)
+
+#then as tibble
+
+is_tibble(biggest_poli_dtm_tibble)
+
+biggest_poli_dtm<-biggest_poli_dtm_tibble %>% 
+  cast_dtm(document, term, count)
+
+biggest_poli_dtm
+
+#Latent Dirichlet allocation
+
+biggest_poli_lda<-LDA(biggest_poli_dtm, k=2, control=list(seed=1234))
+
+biggest_poli_topics<-tidy(biggest_poli_lda, matrix="beta")
+
+View(biggest_poli_topics)
+
+#top 10 terms for each topic
+
+biggest_poli_top_terms <- biggest_poli_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+View(biggest_poli_top_terms)
+```
+
+
+```{r}
+#-----------------------------------------------------------------------------------------
+#Word topic probabilities
+
+biggest_poli_top_terms_plot<-biggest_poli_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  theme_light() +
+  labs( x = "Term", y = "Beta") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_poli_top_terms_plot
+
+ggsave("biggest_poli_top_terms_plot.png", plot = biggest_poli_top_terms_plot, width = 7, height=3)
+#Rig Veda - Dhammapada
+#War          Wise
+#            Sorrow
+
+#As an alternative, we could consider the terms that had the greatest difference in β between Bible and Gospel
+
+poli_beta_spread <- biggest_poli_topics %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  spread(topic, beta) %>%
+  # filter for relatively common words
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+
+biggest_poli_beta_spread_plot<-poli_beta_spread %>%
+  group_by(direction = log_ratio > 0) %>%
+  top_n(10, abs(log_ratio)) %>%
+  ungroup() %>%
+  mutate(term = reorder(term, log_ratio)) %>%
+  ggplot(aes(term, log_ratio, fill = direction)) +
+  geom_col(show.legend = FALSE) +
+  labs(x = "Terms", y = "Log2 ratio of beta in topics 2/1") +
+  coord_flip() +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+biggest_poli_beta_spread_plot
+
+
+ggsave("biggest_poli_beta_spread_plot.png", plot = biggest_poli_beta_spread_plot, width = 7, height=7)
+```
+
+
+```{r}
+#and then on the 4 monotheist religions
+
+#Building dtm
+#first as dataframe
+all_mono_dtm_df<-bible_words %>% 
+  full_join(gospel_words) %>% 
+  full_join(koran_words) %>% 
+  full_join(granth_sahib_words)
+
+View(all_mono_dtm_df)
+
+all_mono_dtm_tibble<-as_tibble(all_mono_dtm_df)
+
+#then as tibble
+
+is_tibble(all_mono_dtm_tibble)
+
+all_mono_dtm<-all_mono_dtm_tibble %>% 
+  cast_dtm(document, term, count)
+
+all_mono_dtm
+
+#Latent Dirichlet allocation
+
+all_mono_lda<-LDA(all_mono_dtm, k=4, control=list(seed=1234))
+
+all_mono_topics<-tidy(all_mono_lda, matrix="beta")
+
+View(all_mono_topics)
+
+#top 10 terms for each topic
+
+all_mono_top_terms <- all_mono_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+View(all_mono_top_terms)
+```
+
+
+```{r}
+#-----------------------------------------------------------------------------------------
+#Word topic probabilities
+
+all_mono_top_terms_plot<-all_mono_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, ncol=4, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  theme_light() +
+  labs( x = "Term", y = "Beta") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+all_mono_top_terms_plot
+
+ggsave("all_mono_top_terms_plot.png", plot = all_mono_top_terms_plot, width = 14, height=3)
+```

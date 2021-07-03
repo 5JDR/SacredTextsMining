@@ -1,0 +1,278 @@
+1 - Introdurre:
+	Nel mio progetto ho analizzato i testi sacri delle religioni che sono ritenute essere le più professate al mondo.
+
+2 - Continua introduzione:	
+	La curiosità mi ha portato a decidere di fare questo progetto piuttosto che altri, lo scopo è quello di imparare qualcosa e magari scoprire
+	principi e valori di religioni a me sconosciute, che possono rendere la vita migliore.
+	Le 6 religioni prese in questione sono: Cristianesimo, Ebraismo, Islam, Induismo, Buddhismo e Sikhismo.
+	Alcune di queste sono in qualche modo legate, come il Cristianesimo che nasce e si divide dall'Ebraismo, e la stessa cosa per il Buddhismo, 
+	che più che una religione è una filosofia antropocentrista, nata per distaccarsi dall'idea delle divinità dell'Induismo, anche l'Islam è in
+	qualche modo collegata con le altre 2 religioni monoteiste, la più ignota per me è il Sikhismo, è una religione praticata nell'asia sud-orientale
+	ed è monoteista.
+
+3 - Dati:
+	I testi sacri di queste religioni sono: 
+		Bibbia, contenente Nuovo ed Antico Testamento rispettivamente relativi a Cristianesimo ed Ebraismo;
+		Corano, relativo all'Islam;
+		Rig Veda, relativo all'Induismo;
+		Dhammapada, relativo al Buddhismo;
+		Shri Guru Granth Sahib Ji, relativo al Sikhismo;
+    	Alcuni di questi non sono gli unici testi sacri della religione di appartenenza, ne esistono anche altri ma questi sono considerati essere i
+	principali.
+
+Sentiment Analysis
+
+4 - Domande:
+	1.
+		Com'è il sentiment dei testi sacri di queste religioni?
+	2.
+		Quali testi sacri hanno il sentiment più positivo e quali il più negativo?
+	3.
+		C'è una relazione tra il sentiment di un testo sacro, e il numero di seguaci?
+	4.
+		Il sentiment di un tesdto sacro riflette il benessere di uno stato in cui la religione di riferimento è molto popolare?
+
+5 - Grafici:
+	Bibbia:
+		Il 65.75% della Bibbia ha sentiment negativo
+		Da questo grafico si evince che ci sono poche parole positive che appaiono tante volte, 
+		e ciò è abbastanza in linea con il risultato precedente che dava una percentuale maggiore di parole negative. 
+	Vangeli:
+		Il 63.79% dei Vangeli ha sentiment negativo
+		Da questo grafico si evince, a contrario dell’antico Testamento,  che ci sono molte parole positive che appaiono tante volte, 
+		nonostante la maggior parte delle parole del nuovo Testamento siano negative, ciò significa che ci saranno tante parole negative 
+		che appaiono poche volte, questo fenomeno è curioso, e potrebbe indicare che in realtà a chi legge il nuovo Testamento non sembra che 
+		sia poi così negativo, dato che le parole positive, seppur siano meno variate, appaiono più volte.
+
+		Un’altra considerazione è che alcune parole non vengono contestualizzate effettuando questo tipo di analisi, come per esempio la parola 
+		morte, a cui viene associato un sentiment negativo, ma all’interno del nuovo Testamento viene utilizzata in contesti positivi, come per 
+		esempio quando si parla di risurrezione.
+	Corano:
+		Il 64.66% del Corano ha sentiment negativo
+		Il grafico assomiglia molto a quello della bibbia, anche i valori percentuali sembrano essere più vicini all’antico Testamento. 
+		Mi aspettavo delle similarità tra queste 3 religioni, data la radice comune.
+	Rig Veda:
+		Il 51.88% del Rig Veda ha sentiment negativo
+		Questa religione, sostanzialmente diversa dalle altre 3 che hanno una radice comune e sono anche abbastanza simili tra di loro, 
+		presenta un sentiment generalmente più positivo, e più equilibrato.
+	Dhammapada:
+		Il 58.45% del Dhammapada ha sentiment negativo
+		Anche qui il risultato differisce da quello ottenuto analizzando le 3 grandi religioni monoteiste, e rappresenta un maggiore equilibrio, 
+		ma non tanto quanto nel caso del Rig Veda.
+		Il grafico sembra essere leggermente squilibrato verso il positivo, quando nella complessità del libro il sentiment è leggermente 
+		squilibrato verso la negatività, sembra essere lo stesso effetto di cui soffre il nuovo Testamento, in cui le parole negative sono 
+		di più ma appaiono meno volte. 
+		La curiosità è che il Buddhismo è nato dall’Induismo, come corrente alternativa e grazie a Buddha… allo stesso modo il Cristianesimo si 
+		è nato come corrente alternativa dell’Ebraismo, queste due religioni presentano una caratteristica comune molto curiosa.
+	Granth Sahib:
+		Il 63.25% dell’Adi Granth ha sentiment negativo
+		Una curiosità che emerge, è che tutte le religioni monoteiste hanno un sentiment perlopiù negativo, anche religioni provenienti da culture 
+		molto distanti, infatti il sentiment dell’Adi Granth assomiglia molto al sentiment dei testi sacri delle 3 grandi religioni monoteiste, 
+		ed il Sikhismo è una religione monoteista.
+		Similarmente al grafico del nuovo Testamento, sembra che le parole positive appaiano tante volte, e le molte parole negative appaiano poche 
+		volte.
+
+6 - Considerazioni appena dette
+
+7,8 - Risposte:
+	1.
+		I testi delle religioni monoteiste (Ebraismo, Cristianesimo, Islam, Sikhismo) hanno un sentiment leggermente negativo
+		I testi delle religioni Induismo e Buddhismo sono leggermente più equilibrati.
+	2.	
+		Il testo sacro più positivo è quello dell’Induismo, il Rig Veda.
+	3.	
+		Sostanzialmente non c’è nessuna correlazione tra il numero di fedeli e la positività del testo sacro della religione di appartenenza.
+		Ci sono religioni con miliardi di seguaci indipendentemente dal fatto che il sentiment sia positivo o negativo, grazie ad una piccola
+		ricerca su google ho trovato che non c'è nessuna relazione tra le 2 cose.
+	4.
+		Non c'è un particolare legame tra il sentiment di un testo sacro ed il benessere degli stati dove la religione va per la maggiore, anche
+		se negli stati occidentali, in cui si vive mediamente meglio, va per la maggiore il Cristianesimo, che però presenta un testo sacro con 
+		sentiment negativo.
+		L'analisi andrebbe approfondita con elementi di economia ma non è questo il mio intento in questo progetto.
+
+Term and Document Frequency
+
+9 - Domande:
+	1.
+		Quali sono le parole più ricorrenti all'interno dei testi sacri?
+	2.
+		Testi sacri di religioni molto differenti, hanno parole in comune?
+	3. 
+		In caso ci siano, può essere ciò dovuto ad una qualche origine in comune tra le religioni? Per esempio la posizione geografica?
+
+10 - Grafici:
+	Term Freq. Distribution
+		Come si può notare c’è una distribuzione molto comune, poche parole che appaiono tante volte e molte parole che appaiono poche volte. 
+		Questa relazione è chiamata legge di Zipf.
+	Term Freq. vs Rank
+		Mi incuriosisce il fatto che dei testi così antichi, rispettino la legge di Zipf come i testi moderni, probabilmente però ciò è dovuto al 
+		fatto che questi testi sono stati tradotti, e reinterpretati, più volte nel corso dei secoli.
+	tf-idf
+		Nel Corano la parola Allah è estremamente presente, a indicare probabilmente la grande devozione che i fedeli mussulmani hanno nei confronti
+		del loro dio, subito dopo c’è la parola maometto, in questo testo il dio ed il profeta sono evidentemente molto più importanti del resto.
+		Per quanto riguarda il nuovo testamento, la parola dio non è tra le più frequenti, mentre Gesù Cristo, san Paolo e san Pietro sono molto 
+		frequenti, a indicare che anche qui i profeti della religione assumono una grandissima importanza, ma per quanto riguarda il dio venerato 
+		non siamo al livello del Corano.
+		Anche Pilato viene annunciato diverse volte all’interno del testo, così come gli apostoli. Sembra appunto che sia una religione in cui la 
+		devozione è molto rivolta alle persone che l’hanno creata.
+		Infine per la Bibbia, le parole più frequenti sono Giuda, una delle dodici tribù d’israele di cui si parla nell’antico Testamento, la più 
+		grande ed importante, i Filistei erano un popolo che abitava la Palestina, Gerusalemme ha una grande importanza, più che nel nuovo 
+		Testamento, Moab è una regione montuosa della palestina, Joab è stato un antico condottiero del popolo d’israele, Manassè fù un sovrano, 
+		Jeremia fu un profeta e Sion è il modo in cui chiamano la cosiddetta “terra promessa”, similmente al nuovo Testamento, sembra che 
+		l’Ebraismo dia molta importanza a profeti e uomini importanti del passato di questa religione, ma di diverso ha che è molto legata al popolo
+		 d’israele, mentre il Cristianesimo è una religione “universale” che si adatta a tutti i popoli.
+	Common Words
+		Possiamo notare come la parola god sia molto presente all’interno di Bibbia e Vangeli, mentre di meno nel Corano, in cui “Dio” viene 
+		chiamato “Allah”.
+		Diverse parole sono più comuni per Bibbia e Vangeli, come figlio, e casa, la prima stranamente appare di più nell’antico Testamento, 
+		mentre la storia del figlio di dio viene raccontata effettivamente nel nuovo Testamento.
+		Altre parole come persone, giorno, signore, bambini sono presenti in quantità significative per tutti e 3 i testi.
+	L'analisi degli n-grams non ha portato a risultati interessanti, i bigrams non si ripetevano più di 1 volta ed i trigrams più presenti all'interno 
+	dei testi non davano alcuna informazione interessante.
+
+11 - Grafici:
+	Term Freq. Distribution
+		Anche qui la distribuzione è quella classica, molto comune in tutti i testi, forse più accentuata dato che le parole che si ripetono poche 
+		volte, in confronto alle altre, sembra quasi non esistano.
+		Anche qui sembra valere la legge di Zipf.
+	Term Freq. vs Rank
+		La curva del Granth Sahib è più lunga in quanto il testo è più lungo, assomiglia molto alle curve delle 3 religioni analizzate prima.
+		Come prima, è curioso il fatto che testi così antichi rispettino la legge di Zipf.
+	tf-idf
+		Non ci sono similarità significanti tra i 3 testi, a parte la parola god, che per ovvie ragioni è presente in ogni testo di questo tipo.
+	Common Words
+		Il Rig Veda ha avuto un'influenza maggiore in questa analisi, probabilmente lo sbilanciamento presente in questi grafici è dovuto al fatto che le 
+		parole in comune sono poche, e le loro distribuzioni all’interno dei singoli libri sono molto diverse, solamente la parola casa presenta una distribuzione simile, 
+		leggermente così anche la parola acqua, ma non sono parole particolarmente interessanti dal punto di vista analitico.
+	Per gli n-grams vale il discorso di prima, se non fosse che i trigrams del tipo "god of", mi hanno dimostrato che gli dei vengono nominati una volta ciascuno all'interno
+	del Rig Veda, un altra forma di "equilibrio" dimostrata da questo libro.
+
+12 - Grafici:
+	Term Freq. Distribution
+		Anche qui la distribuzione è quella classica, molto comune in tutti i testi.
+		Anche qui sembra valere la legge di Zipf.
+	Possiamo notare come i testi sacri di religioni monoteiste presentino distribuzioni veramente simili, l'analisi tf-idf però non ha dato risultati interessanti, anche le parole
+	comuni diventano poche ed insignificanti quando si introduce il Granth Sahib.
+
+13 - Considerazioni appena dette
+
+14 - Risposte
+	1.
+		La parola dio ovviamente è quella che ricorre di più in tutte le religioni, un dato interessante è che l’antico Testamento presenta molti 
+		riferimenti a personaggi importanti nella storia del popolo Ebraico, e questo lega fortemente la religione al popolo, mentre per il nuovo 
+		Testamento e per le altre religioni i riferimenti sono più generici, facendo quindi sì che le altre religioni si adattino bene a qualsiasi 
+		popolo o etnia.
+		Il corano presenta la parola “Allah” quindi “Dio” più volte rispetto ad antico e nuovo Testamento, che danno più spazio invece a profeti e 
+		personaggi.
+		
+	2. 
+		L’unica relazione che c’è tra i testi sacri di religioni molto differenti è quella che c’è tra i testi delle religioni monoteiste, che hanno
+		distribuzioni di frequenza molto simili, ma nessuna parola in comune particolarmente rilevante.
+	3.
+		Ci sono similarità tra le 3 grandi religioni monoteiste, che sono legate da radici comuni e zone geografiche di origine molto vicine, mentre 
+		per quanto riguarda la relazione che lega queste religioni ed il Sikhismo non è forte, e inoltre si tratta di 2 zone geografiche e culturali
+		completamente differenti. Direi che questa relazione non c’è, ma è curioso il fatto che sono 4 religioni monoteiste, e qualcosa in comune 
+		esiste, mentre rispetto a Buddhismo e Induismo sono completamente diverse.
+
+Topic Modeling
+
+15 - Domande
+	1.
+		Quali sono gli argomenti più presenti?
+	2.
+		Ci sono argomenti in comune tra i testi sacri di religioni molto differenti?
+	3.
+		In caso positivo, questi risultati possono rafforzare le ipotesi fatte in precedenza (sono risultati significativi)?
+
+16 - Grafici
+	Word-topic prob (BGK)
+		Ho scelto 1 topic per documento, è molto probabile che i 3 topic rilevati siano distinguibili proprio nei 3 testi sacri, 
+		il 2 sicuramente relativo al Corano per la presenza delle parole “Allah” e “Maometto”, il terzo ai Vangeli per la presenza della parola 
+		“Gesù” e “Cristo”, ed il primo quindi ad esclusione sarà relativo alla Bibbia, inoltre è presente la parola “Land” che rimanda a tutta la 
+		questione della ricerca della “terra promessa” narrata nell’antico Testamento.
+		La parola “Dio” ricorre in tutti e 3 i topic, nel Corano sotto forma di “Allah”, anche la parola “Signore” è caratteristica di tutti e 3 i 
+		topic
+		Anche la parola “Giorno” lega in qualche modo tutti e 3 i topic.
+		Una stranezza è che la parola “Figlio”, presente nel primo e terzo topic (che ho riconosciuto riguardare rispettivamente Bibbia e Vangeli), 
+		ha una probabilità per-topic-per-word più alta nel primo topic rispetto al terzo topic (> 0.01 vs < 0.01), quando la storia del “figlio di 
+		Dio” viene raccontata nel Vangelo.
+	Word-topic prob (BG)
+		Le parole “Signore” e “Dio” hanno il beta più alto in entrambi i topic.
+		Diversamente da prima la parola “figlio” ha un beta più alto nel topic che io ho assunto essere riferito al nuovo Testamento, probabilmente 
+		la presenza del Corano ha influenzato l’analisi precedente, la parola “figlio” è probabilmente più presente all’interno del nuovo Testamento
+		come si pensa che sia.
+		La parola “Israele” è presente in entrambi i topic, ma ha un beta leggermente più alto nel secondo, ma si potrebbe dire che è abbastanza 
+		equilibrato.
+		Da queste analisi evinco che la somiglianza tra antico e nuovo Testamento esiste, è abbastanza forte, ed è sicuramente legata al fatto che 
+		una deriva dall’altra.
+	log2 ratio (BG)
+		Parole come "ascesa", "tabernacolo", "pane", "ritorno" sono più caratteristiche del topic 2, e sono parole che si associano perfettamente 
+		al nuovo Testamento, mentre parole come "Giosuè", "uccidere", "paura", "grazia" appartengono di più al topic 1, Giosuè fu un condottiero 
+		Ebraico, questo risultato mi porta a pensare ancora di più che il topic 1 sia associato alla Bibbia ed il 2 ai Vangeli.
+
+17 - Grafici
+	Word-topic prob (RDG)
+		Ho scelto anche qui 1 topic per documento, anche in questo caso i topic sono assimilabili ai 3 testi sacri, anche se il riconoscimento non è
+		così evidente come nel caso precedente. Non conoscendo queste religioni (nel caso precedente si poteva distinguere il nuovo Testamento dalla
+		parola “Gesù” ed il Corano dalla parola “Allah”), qui abbiamo 2 testi che sono molto simili tra di loro, Dhammapada e Rig Veda, la parola 
+		Buddha non è presente nella top 10 delle parole che contraddistinguono i topic, quindi non saprei dire quale topic riguarda il Dhammapada, 
+		ma la parola “kay” riguarda sicuramente il Granth Sahib, in particolare si riferisce alle “cinque K”, che sono alcuni dei principi 
+		fondamentali di questa religione:
+		Kesh: 	divieto di tagliare i capelli, la barba e i peli del corpo, i primi sono coperti dal “dastar”, un particolare turbante. Queste parti 
+			del corpo rappresentano la virilità, il coraggio e la saggezza.
+		Kangha: piccolo pettine di legno che serve a tenere i capelli fermi sotto il turbante, è simbolo di pulizia.
+		Kachera: pantaloni da combattimento, larghi, utili per andare a cavallo senza disturbare il movimento
+		Kara: un braccialetto di metallo simboleggiante l’umiltà e l’appartenenza al divino.
+		Kirpan: Un pugnale, vero o in miniatura, il sikh tiene a mente le persecuzioni che la loro religione e molte altre hanno sofferto, e la 
+			necessità di difendere la libertà di coscienza (la loro e quella degli altri) contro l'oscurantismo, è simbolo di coraggio.
+		Anche la parola “grazia” è caratteristica solamente di questo testo, quindi deduco che il topic 2 riguarda principalmente il Granth Sahib.
+		Per quanto riguarda gli altri 2 topic abbiamo la parola “saggio”, che è presente solamente all’interno del Dhammapada, quindi topic 1, ma la
+		parola “goddess” non è presente, e stessa cosa per la parola “guru” del topic 3, quindi questi due topic non sono ben identificati, ma 
+		questa unione che potrebbe essere stata creata nei topic tra Dhammapada e Rig Veda può essere stata causata da una sostanziale somiglianza 
+		tra i 2 testi, che sono anche relativi alle 2 religioni Induismo e Buddhismo, la seconda derivata dalla prima, anche se la prima è una 
+		religione monoteista, e la seconda è una dottrina filosofica, non venera dei ma pone al centro l’essere umano.
+	Word-topic prob (RD)
+		In questo caso abbiamo la parola “Guerra” che è caratteristica del Rig Veda, e le parole “Saggio” e “Tristezza” che sono caratteristiche del
+		Dhammapada, quindi i due topic probabilmente si riferiscono principalmente a Rig veda per il topic 1 e Dhammapada per il topic 2. Anche se 
+		dalla mia analisi precedente non sono così sicuro che i due topic distinguano completamente i due libri, in quanto hanno diverse cose in 
+		comune, come intuito dalle diverse analisi precedenti, anche se le due religioni, seppur una derivata dall’altra, siano sostanzialmente 
+		differenti nei credi e nei concetti.
+	Le parole presenti all'interno del grafico log2 ratio in questo caso erano prive di significato quindi ho evitato di considerarlo.
+
+18 - Grafici
+	Word-topic prob (BGKG)
+		Come al solito considero un topic per libro, il primo topic è sicuramente influenzato maggiormente dal Corano, mentre per gli altri 3 la 
+		situazione cambia. Il terzo ed il quarto topic hanno distribuzioni molto simili ai grafici visualizzati precedentemente per Granth Sahib ed 
+		antico Testamento rispettivamente, in più nel quarto sono presenti “Israele”, “Terra” che caratterizzano, come abbiamo visto, la Bibbia. 
+		Il topic 2 quindi mi viene da pensare che sia stato principalmente influenzato dal nuovo Testamento, ma appare la parola “guru” che è 
+		fuorviante.
+		Evidentemente il nuovo Testamento assimila topics anche presenti negli altri libri, a rinforzare la tesi secondo la quale il “Cristianesimo”
+		è una religione che si adatta bene a diversi popoli, diverse etnie e diverse culture, mentre le altre religioni monoteiste sono separate da 
+		barriere culturali e storiche evidenti.
+
+19 - Considerazioni appena fatte
+
+20 - Risposte
+	1.
+		Sicuramente “Dio” è l’argomento principale, ma c’era da aspettarselo, per i Vangeli la storia di Gesù Cristo e dei suoi seguaci (apostoli), 
+		per quanto riguarda la Bibbia la storia del popolo di israele, le dodici tribù, e le varie guerre che hanno dovuto affrontare per ottenere 
+		“la terra promessa”.
+		Per quanto riguarda le altre 3 religioni, anche qui “Dio” è sostanzialmente l’argomento più presente, anche nel Dhammapada che professa una 
+		filosofia antrocentrica che si distacca dal concetto di “divinità”, il Granth Sahib contiene diverse argomentazioni riguardanti le armi, 
+		la guerra, ed il combattimento, questo l’ho potuto comprendere meglio anche dalla mia piccola ricerca sulle 5 K, infine il Rig Veda 
+		contiene principalmente argomenti riguardanti i vari dei della religione politeista, e diversi riferimenti alla natura, probabilmente 
+		legata agli dei stessi.
+	2.
+		Il nuovo Testamento che presenta similarità con le altre religioni, rendendo la religione Cristiana potenzialmente adattabile ad etnie, 
+		popoli e culture diversi.
+
+
+
+
+		
+
+
+	
+
+	
+

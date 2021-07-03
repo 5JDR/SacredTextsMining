@@ -1,0 +1,695 @@
+---
+title: "Progetto_RAW"
+author: "Sandro Junior Della Rovere"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#Librerie
+library(ggplot2)
+library(tidyverse)
+library(tidytext)
+library(dplyr)
+library(tm)
+library(wordcloud)
+library(extrafont)
+loadfonts(device="win")
+
+```
+
+
+```{r}
+#Inizio dalla bibbia
+bible<-read.delim("../bible.txt")
+write.csv(bible, file = "bible_csv.csv")
+bible_csv<-read.csv(file = "../bible_csv.csv",
+         skip = 82,
+         col.names = c("line", "text"),
+         )
+
+View(bible_csv)
+
+#Metto in ordine il dataset
+tidy_bible<-bible_csv %>% 
+  filter(line<74727) %>% 
+  mutate(line = row_number())
+
+tidy_gospel<- tidy_bible %>% 
+  filter(line>57430)
+
+tidy_bible<-tidy_bible %>% 
+  filter(line<57429)
+
+View(tidy_bible)
+
+View(tidy_gospel)
+
+```
+
+
+```{r}
+#SENTIMENT ANALYSIS
+#Creazione del dataset contenente le parole, la loro frequenza, rimozione delle stop words
+bible_words<-tidy_bible %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+#Rimozione dei numeri
+
+bible_words$word<- removeNumbers(bible_words$word)
+
+bible_words<-bible_words %>% 
+  filter(bible_words$word != "")
+
+View(bible_words)
+
+gospel_words<-tidy_gospel %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+#Rimozione dei numeri
+
+gospel_words$word<- removeNumbers(gospel_words$word)
+
+gospel_words<-gospel_words %>% 
+  filter(gospel_words$word != "")
+
+View(gospel_words)
+```
+
+
+```{r}
+#----------------------------------------------------------------------------------------
+#Sentiment analysis of the BIBLE
+
+bible_sentiment_bing <- bible_words %>%
+  inner_join(get_sentiments("bing"))
+
+bible_sentiment_afinn <- bible_words %>%
+  inner_join(get_sentiments("afinn"))
+
+bible_sentiment_nrc <- bible_words %>%
+  inner_join(get_sentiments("nrc"))
+
+View(bible_sentiment_bing)
+
+View(bible_sentiment_afinn)
+
+View(bible_sentiment_nrc)
+
+#Percentuale di parole negative e positive nell'antico testamento secondo il bing lexicon
+
+bible_negative_bing<-nrow(filter(bible_sentiment_bing, sentiment == "negative"))
+
+bible_negative_bing
+
+bible_positive_bing<-nrow(filter(bible_sentiment_bing, sentiment == "positive"))
+
+bible_positive_bing
+
+bible_negative_bing_percentage<-(bible_negative_bing/(bible_negative_bing+bible_positive_bing))*100
+
+bible_negative_bing_percentage
+
+bible_positive_bing_percentage<-100-bible_negative_bing_percentage
+
+bible_positive_bing_percentage
+
+#According to the bing lexicon, 65.75% of the old Testament has a negative sentiment, and 34.25% has a positive sentiment.
+#Now let's plot using the afinn lexicon
+
+for (i in 1:nrow(bible_sentiment_afinn)) {
+  n <- if(bible_sentiment_afinn$value[i] < 0){"red"} else {"green"}
+  bible_sentiment_afinn$color[i] <- n
+}
+
+col = as.vector(bible_sentiment_afinn$color)
+
+bible_sentiment_plot_afinn<-bible_sentiment_afinn %>% 
+  filter(n>120) %>% 
+  ggplot(aes(x=word,y=value, fill = color)) +
+  geom_col(show.legend = FALSE, width=0.5) +
+  scale_fill_manual(values = col) +
+  coord_flip() +
+  theme_classic() +
+  labs( x = "Words", y = "Sentiment score", caption ="Sentiment of the Old Testament according to the afinn lexicon.\n\nAccording to the bing lexicon, 65.75% of the Old Testament is negative.") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+#This plot refers to the words that occur more than 120 times across the old Testament
+bible_sentiment_plot_afinn
+
+ggsave("bible_sentiment_plot_afinn.png", plot = bible_sentiment_plot_afinn)
+```
+
+
+```{r}
+#--------------------------------------------------------------------------------------------
+#Sentiment analysis of the GOSPEL
+
+gospel_sentiment_bing <- gospel_words %>%
+  inner_join(get_sentiments("bing"))
+
+gospel_sentiment_afinn <- gospel_words %>%
+  inner_join(get_sentiments("afinn"))
+
+gospel_sentiment_nrc <- gospel_words %>%
+  inner_join(get_sentiments("nrc"))
+
+View(gospel_sentiment_bing)
+
+View(gospel_sentiment_afinn)
+
+View(gospel_sentiment_nrc)
+
+#Percentuale di parole negative e positive nell'antico testamento secondo il bing lexicon
+
+gospel_negative_bing<-nrow(filter(gospel_sentiment_bing, sentiment == "negative"))
+
+gospel_negative_bing
+
+gospel_positive_bing<-nrow(filter(gospel_sentiment_bing, sentiment == "positive"))
+
+gospel_positive_bing
+
+gospel_negative_bing_percentage<-(gospel_negative_bing/(gospel_negative_bing+gospel_positive_bing))*100
+
+gospel_negative_bing_percentage
+
+gospel_positive_bing_percentage<-100-gospel_negative_bing_percentage
+
+gospel_positive_bing_percentage
+
+#According to the bing lexicon, 63.79% of the new Testament has a negative sentiment, and 36.21% has a positive sentiment.
+#Now let's plot using the afinn lexicon
+
+for (i in 1:nrow(gospel_sentiment_afinn)) {
+  n <- if(gospel_sentiment_afinn$value[i] < 0){"red"} else {"green"}
+  gospel_sentiment_afinn$color[i] <- n
+}
+
+gospel_sentiment_plot_afinn<-gospel_sentiment_afinn %>% 
+  filter(n>50) %>% 
+  ggplot(aes(x=word,y=value, fill = color)) +
+  geom_col(show.legend = FALSE, width=0.5) +
+  scale_fill_manual(values = col) +
+  coord_flip() +
+  theme_classic() +
+  labs( x = "Words", y = "Sentiment score", caption ="Sentiment of the New Testament according to the afinn lexicon\n\nAccording to the bing lexicon, 63.79% of the New Testament is negative.") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+#This plot refers to the words that occur more than 120 times across the bible
+gospel_sentiment_plot_afinn
+
+ggsave("gospel_sentiment_plot_afinn.png", plot = gospel_sentiment_plot_afinn)
+```
+
+
+```{r}
+#wordcloud about the sentiment of the old Testament according to the nrc lexicon
+set.seed(1234)
+wordcloud(words = bible_sentiment_nrc$sentiment, freq = bible_sentiment_nrc$n, min.freq = 120,
+          max.words=100, random.order=FALSE, rot.per=0.3, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+
+```{r}
+#wordcloud about the sentiment of the new Testament according to the nrc lexicon
+wordcloud(words = gospel_sentiment_nrc$sentiment, freq = gospel_sentiment_nrc$n, min.freq = 50,
+          max.words=100, random.order=FALSE, rot.per=0.3, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+
+```{r}
+#Now i'm going to start again but this time for the koran, I expect the first differences here
+koran<-read.delim("koran.txt")
+write.csv(koran, file = "koran_csv.csv")
+koran_csv<-read.csv(file = "koran_csv.csv",
+         skip = 146,
+         col.names = c("line", "text"),
+         )
+
+View(koran_csv)
+
+#Metto in ordine il dataset
+tidy_koran<-koran_csv %>% 
+  filter(line<14260) %>% 
+  mutate(line = row_number())
+
+
+View(tidy_koran)
+```
+
+
+```{r}
+#SENTIMENT ANALYSIS
+
+#Creazione del dataset contenente le parole, la loro frequenza, rimozione delle stop words
+koran_words<-tidy_koran %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+View(koran_words)
+
+#Rimozione dei numeri
+
+koran_words$word<- removeNumbers(koran_words$word)
+
+koran_words<-koran_words %>% 
+  filter(koran_words$word != "")
+
+View(koran_words)
+```
+
+
+```{r}
+#----------------------------------------------------------------------------------------
+#Sentiment analysis of the KORAN
+
+koran_sentiment_bing <- koran_words %>%
+  inner_join(get_sentiments("bing"))
+
+koran_sentiment_afinn <- koran_words %>%
+  inner_join(get_sentiments("afinn"))
+
+koran_sentiment_nrc <- koran_words %>%
+  inner_join(get_sentiments("nrc"))
+
+View(koran_sentiment_bing)
+
+View(koran_sentiment_afinn)
+
+View(koran_sentiment_nrc)
+
+#Percentuale di parole negative e positive nel corano secondo il bing lexicon
+
+koran_negative_bing<-nrow(filter(koran_sentiment_bing, sentiment == "negative"))
+
+koran_negative_bing
+
+koran_positive_bing<-nrow(filter(koran_sentiment_bing, sentiment == "positive"))
+
+koran_positive_bing
+
+koran_negative_bing_percentage<-(koran_negative_bing/(koran_negative_bing+koran_positive_bing))*100
+
+koran_negative_bing_percentage
+
+koran_positive_bing_percentage<-100-koran_negative_bing_percentage
+
+koran_positive_bing_percentage
+
+#According to the bing lexicon, 64.66% of the koran has a negative sentiment, and 35.34% has a positive sentiment.
+#Now let's plot using the afinn lexicon
+
+for (i in 1:nrow(koran_sentiment_afinn)) {
+  n <- if(koran_sentiment_afinn$value[i] < 0){"red"} else {"green"}
+  koran_sentiment_afinn$color[i] <- n
+}
+
+koran_sentiment_plot_afinn<-koran_sentiment_afinn %>% 
+  filter(n>50) %>% 
+  ggplot(aes(x=word,y=value, fill = color)) +
+  geom_col(show.legend = FALSE, width=0.5) +
+  scale_fill_manual(values = col) +
+  coord_flip() +
+  theme_classic() +
+  labs( x = "Words", y = "Sentiment score", caption ="Sentiment of the Koran according to the afinn lexicon.\n\nAccording to the bing lexicon, 64.66% of the Koran is negative.") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+#This plot refers to the words that occur more than 120 times across the koran
+koran_sentiment_plot_afinn
+
+ggsave("koran_sentiment_plot_afinn.png", plot = koran_sentiment_plot_afinn)
+```
+
+
+```{r}
+#wordcloud about the sentiment of the Koran according to the nrc lexicon
+wordcloud(words = koran_sentiment_nrc$sentiment, freq = koran_sentiment_nrc$n, min.freq = 50,
+          max.words=100, random.order=FALSE, rot.per=0.3, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+
+```{r}
+#DA QUI FACCIO LA SENTIMENT ANALYSIS DEI TESTI SACRI ASIATICI
+#These books contain the original language and the translation, after removing the introduction and the conclusion, written by the author, I think it will be enough to join the text with the lexicons to tidy the dataset and keep only the english words.
+#These books are smaller than the first ones, because they only contain mantras and prayers, not stories like the new and the old testament for example.
+
+#Inizio dal Rig Veda (Induismo)
+
+rig_veda<-read.delim("rig_veda.txt")
+write.csv(rig_veda, file = "rig_veda_csv.csv")
+rig_veda_csv<-read.csv(file = "rig_veda_csv.csv",
+         skip = 171,
+         col.names = c("line", "text"),
+         )
+
+View(rig_veda_csv)
+
+#Metto in ordine il dataset
+tidy_rig_veda<-rig_veda_csv %>% 
+  filter(line<2021) %>% 
+  mutate(line = row_number())
+
+
+View(tidy_rig_veda)
+```
+
+
+```{r}
+#SENTIMENT ANALYSIS
+
+#Creazione del dataset contenente le parole, la loro frequenza, rimozione delle stop words
+rig_veda_words<-tidy_rig_veda %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+View(rig_veda_words)
+
+#Rimozione dei numeri
+
+rig_veda_words$word<- removeNumbers(rig_veda_words$word)
+
+rig_veda_words<-rig_veda_words %>% 
+  filter(rig_veda_words$word != "")
+
+View(rig_veda_words)
+
+#Sono presenti diverse parole in lingua originale che non potranno essere analizzate, probabilmente neanche i nomi degli dei, quando farò la document term frequency proverò ad usare una soluzione in cui considererò bigrams o trigrams contenenti la parola "god", in modo tale da considerare, anche se in modo parziale, anche questa frequenza.
+```
+
+
+```{r}
+#----------------------------------------------------------------------------------------
+#Sentiment analysis of the RIG VEDA
+
+rig_veda_sentiment_bing <- rig_veda_words %>%
+  inner_join(get_sentiments("bing"))
+
+rig_veda_sentiment_afinn <- rig_veda_words %>%
+  inner_join(get_sentiments("afinn"))
+
+rig_veda_sentiment_nrc <- rig_veda_words %>%
+  inner_join(get_sentiments("nrc"))
+
+View(rig_veda_sentiment_bing)
+
+View(rig_veda_sentiment_afinn)
+
+View(rig_veda_sentiment_nrc)
+
+#Percentuale di parole negative e positive nel Rig Veda secondo il bing lexicon
+
+rig_veda_negative_bing<-nrow(filter(rig_veda_sentiment_bing, sentiment == "negative"))
+
+rig_veda_negative_bing
+
+rig_veda_positive_bing<-nrow(filter(rig_veda_sentiment_bing, sentiment == "positive"))
+
+rig_veda_positive_bing
+
+rig_veda_negative_bing_percentage<-(rig_veda_negative_bing/(rig_veda_negative_bing+rig_veda_positive_bing))*100
+
+rig_veda_negative_bing_percentage
+
+rig_veda_positive_bing_percentage<-100-rig_veda_negative_bing_percentage
+
+rig_veda_positive_bing_percentage
+
+#According to the bing lexicon, 51.88% of the Rig Veda has a negative sentiment, and 48.12% has a positive sentiment.
+#Now let's plot using the afinn lexicon
+
+for (i in 1:nrow(rig_veda_sentiment_afinn)) {
+  n <- if(rig_veda_sentiment_afinn$value[i] < 0){"red"} else {"green"}
+  rig_veda_sentiment_afinn$color[i] <- n
+}
+
+rig_veda_sentiment_plot_afinn<-rig_veda_sentiment_afinn %>% 
+  filter(n>3) %>% 
+  ggplot(aes(x=word,y=value, fill = color)) +
+  geom_col(show.legend = FALSE, width=0.5) +
+  scale_fill_manual(values = col) +
+  coord_flip() +
+  theme_classic() +
+  labs( x = "Words", y = "Sentiment score", caption ="Sentiment of the Rig Veda according to the afinn lexicon.\n\nAccording to the bing lexicon, 51.88% of the Rig Veda is negative.") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+#This plot refers to the words that occur more than 3 times across the Rig Veda
+rig_veda_sentiment_plot_afinn
+
+ggsave("rig_veda_sentiment_plot_afinn.png", plot = rig_veda_sentiment_plot_afinn)
+```
+
+
+```{r}
+#wordcloud about the sentiment of the Rig Veda according to the nrc lexicon
+wordcloud(words = rig_veda_sentiment_nrc$sentiment, freq = rig_veda_sentiment_nrc$n, min.freq = 3,
+          max.words=45, random.order=FALSE, rot.per=0.3, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+
+```{r}
+#Ora il Dhammapada (Buddhismo)
+
+dhammapada<-read.delim("dhammapada.txt")
+write.csv(dhammapada, file = "dhammapada_csv.csv")
+dhammapada_csv<-read.csv(file = "dhammapada_csv.csv",
+         skip = 298,
+         col.names = c("line", "text"),
+         )
+
+View(dhammapada_csv)
+
+#Metto in ordine il dataset
+tidy_dhammapada<-dhammapada_csv %>% 
+  filter(line<2449) %>% 
+  mutate(line = row_number())
+
+
+View(tidy_dhammapada)
+```
+
+
+```{r}
+#SENTIMENT ANALYSIS
+
+#Creazione del dataset contenente le parole, la loro frequenza, rimozione delle stop words
+dhammapada_words<-tidy_dhammapada %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+View(dhammapada_words)
+
+#Rimozione dei numeri
+
+dhammapada_words$word<- removeNumbers(dhammapada_words$word)
+
+dhammapada_words<-dhammapada_words %>% 
+  filter(dhammapada_words$word != "")
+
+View(dhammapada_words)
+
+#Sono presenti diverse parole in lingua originale che non potranno essere analizzate, probabilmente neanche i nomi degli dei, quando farò la document term frequency proverò ad usare una soluzione in cui considererò bigrams o trigrams contenenti la parola "god", in modo tale da considerare, anche se in modo parziale, anche questa frequenza.
+```
+
+
+```{r}
+#----------------------------------------------------------------------------------------
+#Sentiment analysis of the DHAMMAPADA
+
+dhammapada_sentiment_bing <- dhammapada_words %>%
+  inner_join(get_sentiments("bing"))
+
+dhammapada_sentiment_afinn <- dhammapada_words %>%
+  inner_join(get_sentiments("afinn"))
+
+dhammapada_sentiment_nrc <- dhammapada_words %>%
+  inner_join(get_sentiments("nrc"))
+
+View(dhammapada_sentiment_bing)
+
+View(dhammapada_sentiment_afinn)
+
+View(dhammapada_sentiment_nrc)
+
+#Percentuale di parole negative e positive nel dhammapada secondo il bing lexicon
+
+dhammapada_negative_bing<-nrow(filter(dhammapada_sentiment_bing, sentiment == "negative"))
+
+dhammapada_negative_bing
+
+dhammapada_positive_bing<-nrow(filter(dhammapada_sentiment_bing, sentiment == "positive"))
+
+dhammapada_positive_bing
+
+dhammapada_negative_bing_percentage<-(dhammapada_negative_bing/(dhammapada_negative_bing+dhammapada_positive_bing))*100
+
+dhammapada_negative_bing_percentage
+
+dhammapada_positive_bing_percentage<-100-dhammapada_negative_bing_percentage
+
+dhammapada_positive_bing_percentage
+
+#According to the bing lexicon, 58.45% of the Dhammapada has a negative sentiment, and 41.55% has a positive sentiment.
+#Now let's plot using the afinn lexicon
+
+for (i in 1:nrow(dhammapada_sentiment_afinn)) {
+  n <- if(dhammapada_sentiment_afinn$value[i] < 0){"red"} else {"green"}
+  dhammapada_sentiment_afinn$color[i] <- n
+}
+
+dhammapada_sentiment_plot_afinn<-dhammapada_sentiment_afinn %>% 
+  filter(n>8) %>% 
+  ggplot(aes(x=word,y=value, fill = color)) +
+  geom_col(show.legend = FALSE, width=0.5) +
+  scale_fill_manual(values = col) +
+  coord_flip() +
+  theme_classic() +
+  labs( x = "Words", y = "Sentiment score", caption ="Sentiment of the Dhammapada according to the afinn lexicon.\n\nAccording to the bing lexicon, 58.45% of the Dhammapada is negative.") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+#This plot refers to the words that occur more than 3 times across the dhammapada
+dhammapada_sentiment_plot_afinn
+
+ggsave("dhammapada_sentiment_plot_afinn.png", plot = dhammapada_sentiment_plot_afinn)
+```
+
+
+```{r}
+#wordcloud about the sentiment of the Rig Veda according to the nrc lexicon
+wordcloud(words = dhammapada_sentiment_nrc$sentiment, freq = dhammapada_sentiment_nrc$n, min.freq = 15,
+          max.words=35, random.order=FALSE, rot.per=0.3, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+
+```{r}
+#Ora lo Shri Guru Granth Sahib (Sikhismo)
+#Questo testo è stato particolarmente problematico, non c'era su project gutenberg, era in pdf, ho provato ad usare R per convertirlo in txt ma non ci sono riuscito, 
+#Ho usato un convertitore online da pdf a txt e poi ci ho lavorato.
+
+granth_sahib<-read.delim("granth_sahib.txt")
+write.csv(granth_sahib, file = "granth_sahib_csv.csv")
+granth_sahib_csv<-read.csv(file = "granth_sahib_csv.csv",
+         skip = 14,
+         col.names = c("line", "text"),
+         )
+
+View(granth_sahib_csv)
+
+#Metto in ordine il dataset
+tidy_granth_sahib<-granth_sahib_csv %>% 
+  mutate(line = row_number())
+
+
+View(tidy_granth_sahib)
+```
+
+
+```{r}
+#SENTIMENT ANALYSIS
+
+#Creazione del dataset contenente le parole, la loro frequenza, rimozione delle stop words
+granth_sahib_words<-tidy_granth_sahib %>% 
+  unnest_tokens(word, text) %>% 
+  count(word, sort = TRUE) %>% 
+  anti_join(stop_words)
+
+View(granth_sahib_words)
+
+#Rimozione dei numeri
+
+granth_sahib_words$word<- removeNumbers(granth_sahib_words$word)
+
+granth_sahib_words<-granth_sahib_words %>% 
+  filter(granth_sahib_words$word != "")
+
+View(granth_sahib_words)
+
+#Sono presenti diverse parole in lingua originale che non potranno essere analizzate, ma dato che è presente la traduzione sarà sufficiente analizzare le parole che hanno una ricorrenza nel lexicon.
+```
+
+
+```{r}
+#----------------------------------------------------------------------------------------
+#Sentiment analysis of the SHRI GURU GRANTH SAHIB
+
+granth_sahib_sentiment_bing <- granth_sahib_words %>%
+  inner_join(get_sentiments("bing"))
+
+granth_sahib_sentiment_afinn <- granth_sahib_words %>%
+  inner_join(get_sentiments("afinn"))
+
+granth_sahib_sentiment_nrc <- granth_sahib_words %>%
+  inner_join(get_sentiments("nrc"))
+
+View(granth_sahib_sentiment_bing)
+
+View(granth_sahib_sentiment_afinn)
+
+View(granth_sahib_sentiment_nrc)
+
+#Percentuale di parole negative e positive nello shri guru granth sahib secondo il bing lexicon
+
+granth_sahib_negative_bing<-nrow(filter(granth_sahib_sentiment_bing, sentiment == "negative"))
+
+granth_sahib_negative_bing
+
+granth_sahib_positive_bing<-nrow(filter(granth_sahib_sentiment_bing, sentiment == "positive"))
+
+granth_sahib_positive_bing
+
+granth_sahib_negative_bing_percentage<-(granth_sahib_negative_bing/(granth_sahib_negative_bing+granth_sahib_positive_bing))*100
+
+granth_sahib_negative_bing_percentage
+
+granth_sahib_positive_bing_percentage<-100-granth_sahib_negative_bing_percentage
+
+granth_sahib_positive_bing_percentage
+
+#According to the bing lexicon, 63.25% of the Shri Guru Granth Sahib has a negative sentiment, and 36.75% has a positive sentiment.
+#Now let's plot using the afinn lexicon
+
+for (i in 1:nrow(granth_sahib_sentiment_afinn)) {
+  n <- if(granth_sahib_sentiment_afinn$value[i] < 0){"red"} else {"green"}
+  granth_sahib_sentiment_afinn$color[i] <- n
+}
+
+granth_sahib_sentiment_plot_afinn<-granth_sahib_sentiment_afinn %>% 
+  filter(n>400) %>% 
+  ggplot(aes(x=word,y=value, fill = color)) +
+  geom_col(show.legend = FALSE, width=0.5) +
+  scale_fill_manual(values = col) +
+  coord_flip() +
+  theme_classic() +
+  labs( x = "Words", y = "Sentiment score", caption ="Sentiment of the Granth Sahib according to the afinn lexicon.\n\nAccording to the bing lexicon, 63.25% of the Granth Sahib is negative.") +
+  theme(text=element_text(family="Noto Sans", size=14))
+
+#This plot refers to the words that occur more than 400 times across the shri guru granth sahib
+granth_sahib_sentiment_plot_afinn
+
+ggsave("granth_sahib_sentiment_plot_afinn.png", plot = granth_sahib_sentiment_plot_afinn)
+```
+
+
+```{r}
+#wordcloud about the sentiment of the Shri Guru Granth Sahib according to the nrc lexicon
+wordcloud(words = granth_sahib_sentiment_nrc$sentiment, freq = granth_sahib_sentiment_nrc$n, min.freq = 400,
+          max.words=50, random.order=FALSE, rot.per=0.3, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
