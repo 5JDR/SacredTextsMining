@@ -1,7 +1,6 @@
 ---
 title: "Topic_modeling_RAW"
 author: "Sandro Junior Della Rovere"
-date: "30/6/2021"
 output: html_document
 ---
 
